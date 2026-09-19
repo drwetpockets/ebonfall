@@ -793,7 +793,35 @@
         } else {
           player.xp += combatTarget.xp;
           player.gold += combatTarget.gold;
-          log(`Defeated ${combatTarget.name}! +${combatTarget.xp} XP +${combatTarget.gold}g`, "combat");
+
+          // Better, more varied loot
+          let lootMsg = `Defeated ${combatTarget.name}! +${combatTarget.xp} XP +${combatTarget.gold}g`;
+          const lootRoll = Math.random();
+
+          if (lootRoll < 0.18) {
+            // Weapon
+            const weapons = ["iron_blade", "cyber_bow"];
+            const w = weapons[Math.floor(Math.random() * weapons.length)];
+            player.inventory.push(w);
+            lootMsg += ` • Found ${ITEMS[w].name}!`;
+          } else if (lootRoll < 0.32) {
+            // Armor
+            player.inventory.push("leather_armor");
+            lootMsg += ` • Found Leather Armor!`;
+          } else if (lootRoll < 0.50) {
+            // Potion
+            const pot = Math.random() < 0.6 ? "health_potion" : "mana_potion";
+            player.inventory.push(pot);
+            lootMsg += ` • Found ${ITEMS[pot].name}!`;
+          } else if (lootRoll < 0.60) {
+            // Adult item (rarer)
+            const adult = Math.random() < 0.5 ? "pleasure_oil" : "aphrodisiac";
+            player.inventory.push(adult);
+            lootMsg += ` • Found ${ITEMS[adult].name}!`;
+          }
+          // else: just gold + xp (most common)
+
+          log(lootMsg, "combat");
           checkLevelUp();
         }
       }
@@ -815,26 +843,66 @@
       }
     }
 
-    // Temporary: press E to fight when in dungeon/wilderness
+    // Better spaced-out interactions (less spammy)
+    let lastActionTime = 0;
+    const ACTION_COOLDOWN = 2200; // 2.2 seconds between actions
+
     window.addEventListener("keydown", e => {
-      if (e.key.toLowerCase() === "e" && !inCombat) {
-        if (player.location === "dungeon" || player.location === "wilderness") {
+      if (e.key.toLowerCase() !== "e" || inCombat) return;
+
+      const now = Date.now();
+      if (now - lastActionTime < ACTION_COOLDOWN) {
+        return; // still on cooldown
+      }
+      lastActionTime = now;
+
+      if (player.location === "dungeon") {
+        // 40% chance to find a monster, otherwise nothing
+        if (Math.random() < 0.40) {
           startMonsterFight();
-        } else if (player.location === "brothel") {
-          // simple seduction
-          const power = player.cha * 3 + player.skills.seduction * 8;
-          if (Math.random() * 100 < power) {
-            const g = 25 + Math.floor(Math.random() * 40);
-            player.gold += g;
-            player.skills.seduction += 2;
-            log(`You successfully seduced someone... +${g} gold`, "seduction");
+        } else {
+          log("You search the dark corridors... nothing here.", "system");
+        }
+      } 
+      else if (player.location === "wilderness") {
+        // 35% chance
+        if (Math.random() < 0.35) {
+          startMonsterFight();
+        } else {
+          log("You scan the twisted woods... it's quiet for now.", "system");
+        }
+      } 
+      else if (player.location === "brothel") {
+        const power = player.cha * 3 + player.skills.seduction * 8 + (player._tempSeduce || 0);
+        if (Math.random() * 100 < power) {
+          const g = 20 + Math.floor(Math.random() * 45);
+          player.gold += g;
+          player.skills.seduction += 2;
+          // small chance at an adult item
+          if (Math.random() < 0.25) {
+            const adultLoot = Math.random() < 0.5 ? "pleasure_oil" : "aphrodisiac";
+            player.inventory.push(adultLoot);
+            log(`You successfully seduced someone... +${g} gold and found ${ITEMS[adultLoot].name}!`, "seduction");
           } else {
-            log("They weren't interested.", "seduction");
-            player.skills.seduction++;
+            log(`You successfully seduced someone... +${g} gold`, "seduction");
           }
+        } else {
+          log("They weren't interested this time.", "seduction");
+          player.skills.seduction++;
+        }
+        renderUI();
+      } 
+      else if (player.location === "town") {
+        // Simple merchant / rest options
+        const roll = Math.random();
+        if (roll < 0.4) {
+          log("A street merchant offers you a Health Potion for 18 gold. (Press E again soon to buy - coming in next update)", "system");
+        } else if (roll < 0.7) {
+          log("You rest for a moment on a neon bench. Feeling a bit better.", "system");
+          player.hp = Math.min(player.maxHp, player.hp + 8);
           renderUI();
-        } else if (player.location === "town") {
-          log("Town: Press E near the merchant later. (Coming soon)", "system");
+        } else {
+          log("The town is lively. Nothing special happens.", "system");
         }
       }
     });
