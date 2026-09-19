@@ -256,22 +256,58 @@
     };
 
     const ITEMS = {
-      rusty_sword:   { name: "Rusty Sword", type: "weapon", dmg: 8, price: 25 },
-      iron_blade:    { name: "Iron Blade", type: "weapon", dmg: 14, price: 80 },
-      cyber_bow:     { name: "Cyber Bow", type: "weapon", dmg: 13, price: 90 },
-      leather_armor: { name: "Leather Armor", type: "armor", def: 5, price: 40 },
-      chain_mail:    { name: "Chain Mail", type: "armor", def: 12, price: 120 },
-      health_potion: { name: "Health Potion", type: "consumable", heal: 40, price: 20 },
-      mana_potion:   { name: "Mana Potion", type: "consumable", mana: 30, price: 25 },
-      pleasure_oil:  { name: "Pleasure Oil", type: "adult", seduceBonus: 15, price: 35 },
-      aphrodisiac:   { name: "Aphrodisiac", type: "adult", seduceBonus: 25, price: 60 }
+      // ===== COMMON =====
+      rusty_sword:      { name: "Rusty Sword", type: "weapon", dmg: 7, price: 20, tier: "Common" },
+      wooden_bow:       { name: "Wooden Bow", type: "weapon", dmg: 6, price: 18, tier: "Common" },
+      leather_armor:    { name: "Leather Armor", type: "armor", def: 4, price: 30, tier: "Common" },
+      health_potion:    { name: "Health Potion", type: "consumable", heal: 35, price: 18, tier: "Common" },
+      mana_potion:      { name: "Mana Potion", type: "consumable", mana: 25, price: 20, tier: "Common" },
+      pleasure_oil:     { name: "Pleasure Oil", type: "adult", seduceBonus: 12, price: 30, tier: "Common" },
+
+      // ===== UNCOMMON =====
+      iron_blade:       { name: "Iron Blade", type: "weapon", dmg: 13, price: 75, tier: "Uncommon" },
+      cyber_bow:        { name: "Cyber Bow", type: "weapon", dmg: 14, price: 85, tier: "Uncommon" },
+      chain_mail:       { name: "Chain Mail", type: "armor", def: 9, price: 95, tier: "Uncommon" },
+      greater_health:   { name: "Greater Health Potion", type: "consumable", heal: 70, price: 45, tier: "Uncommon" },
+      greater_mana:     { name: "Greater Mana Potion", type: "consumable", mana: 55, price: 50, tier: "Uncommon" },
+      aphrodisiac:      { name: "Aphrodisiac", type: "adult", seduceBonus: 22, price: 55, tier: "Uncommon" },
+
+      // ===== RARE =====
+      neon_edge:        { name: "Neon Edge", type: "weapon", dmg: 19, price: 180, tier: "Rare" },
+      pulse_bow:        { name: "Pulse Bow", type: "weapon", dmg: 20, price: 195, tier: "Rare" },
+      plasma_staff:     { name: "Plasma Staff", type: "weapon", dmg: 17, magBonus: 8, price: 210, tier: "Rare" },
+      shadow_weave:     { name: "Shadow Weave Armor", type: "armor", def: 15, price: 220, tier: "Rare" },
+      elixir_of_lust:   { name: "Elixir of Lust", type: "adult", seduceBonus: 35, price: 120, tier: "Rare" },
+      circuit_heart:    { name: "Circuit Heart", type: "consumable", heal: 100, mana: 40, price: 130, tier: "Rare" },
+
+      // ===== EPIC =====
+      void_cleaver:     { name: "Void Cleaver", type: "weapon", dmg: 27, price: 420, tier: "Epic" },
+      storm_piercer:    { name: "Storm Piercer", type: "weapon", dmg: 26, price: 400, tier: "Epic" },
+      soul_reactor:     { name: "Soul Reactor Staff", type: "weapon", dmg: 22, magBonus: 14, price: 450, tier: "Epic" },
+      dragon_circuit:   { name: "Dragon Circuit Plate", type: "armor", def: 24, price: 480, tier: "Epic" },
+      queen_venom:      { name: "Queen's Venom", type: "adult", seduceBonus: 50, price: 280, tier: "Epic" },
+      overclock_serum:  { name: "Overclock Serum", type: "consumable", heal: 150, mana: 80, price: 260, tier: "Epic" },
+
+      // ===== LEGENDARY =====
+      godslayer:        { name: "Godslayer Protocol", type: "weapon", dmg: 38, price: 900, tier: "Legendary" },
+      infinity_bow:     { name: "Infinity String Bow", type: "weapon", dmg: 36, price: 880, tier: "Legendary" },
+      black_sun_staff:  { name: "Black Sun Staff", type: "weapon", dmg: 30, magBonus: 22, price: 950, tier: "Legendary" },
+      eternal_carapace: { name: "Eternal Carapace", type: "armor", def: 35, price: 980, tier: "Legendary" },
+      forbidden_nectar: { name: "Forbidden Nectar", type: "adult", seduceBonus: 75, price: 600, tier: "Legendary" },
+      phoenix_core:     { name: "Phoenix Core", type: "consumable", heal: 300, mana: 150, price: 550, tier: "Legendary" }
     };
 
     const MONSTERS = [
-      { name: "Cyber Bandit", hp: 45, dmg: 9, xp: 25, gold: 15 },
-      { name: "Neon Spider", hp: 35, dmg: 12, xp: 30, gold: 12 },
-      { name: "Corrupted Knight", hp: 75, dmg: 15, xp: 55, gold: 40 },
-      { name: "Lust Drone", hp: 90, dmg: 16, xp: 80, gold: 55, seducible: true }
+      { name: "Cyber Bandit", hp: 45, dmg: 9, xp: 25, gold: 15, tier: 1 },
+      { name: "Neon Spider", hp: 38, dmg: 11, xp: 28, gold: 14, tier: 1 },
+      { name: "Glitch Rat", hp: 30, dmg: 8, xp: 18, gold: 10, tier: 1 },
+      { name: "Corrupted Knight", hp: 80, dmg: 16, xp: 60, gold: 45, tier: 2 },
+      { name: "Data Wraith", hp: 70, dmg: 18, xp: 65, gold: 50, tier: 2 },
+      { name: "Lust Drone", hp: 95, dmg: 17, xp: 85, gold: 60, seducible: true, tier: 2 },
+      { name: "Circuit Golem", hp: 140, dmg: 22, xp: 120, gold: 90, tier: 3 },
+      { name: "Neon Succubus", hp: 110, dmg: 20, xp: 110, gold: 85, seducible: true, tier: 3 },
+      { name: "Void Stalker", hp: 180, dmg: 28, xp: 180, gold: 140, tier: 4 },
+      { name: "Protocol Demon", hp: 220, dmg: 32, xp: 220, gold: 180, seducible: true, tier: 4 }
     ];
 
     // Simple map zones (world coordinates)
@@ -630,7 +666,9 @@
         let btn = "";
         if (item.type === "weapon" || item.type === "armor") btn = `<button onclick="equipItem('${id}')">Equip</button>`;
         else btn = `<button onclick="useItem('${id}',${idx})">Use</button>`;
-        inv += `<div class="item"><span>${item.name}</span>${btn}</div>`;
+        const tierColor = { Common: "#aaaaaa", Uncommon: "#2ecc71", Rare: "#3498db", Epic: "#9b59b6", Legendary: "#f1c40f" };
+        const color = tierColor[item.tier] || "#ccc";
+        inv += `<div class="item"><span style="color:${color}">${item.name}</span>${btn}</div>`;
       });
       document.getElementById("inventoryList").innerHTML = inv || "<em>Empty</em>";
     }
@@ -716,6 +754,7 @@
       const w = player.equipped.weapon ? ITEMS[player.equipped.weapon] : null;
       let base = (w?.dmg || 5) + Math.floor(player.str / 2) + player.skills.combat;
       if (player.class === "archer") base += player.skills.ranged;
+      if (w?.magBonus) base += Math.floor(w.magBonus * 0.6) + Math.floor(player.mag / 3);
       return base;
     }
 
@@ -794,32 +833,36 @@
           player.xp += combatTarget.xp;
           player.gold += combatTarget.gold;
 
-          // Better, more varied loot
+          // Tiered loot system
           let lootMsg = `Defeated ${combatTarget.name}! +${combatTarget.xp} XP +${combatTarget.gold}g`;
-          const lootRoll = Math.random();
+          const roll = Math.random();
+          const monTier = combatTarget.tier || 1;
 
-          if (lootRoll < 0.18) {
-            // Weapon
-            const weapons = ["iron_blade", "cyber_bow"];
-            const w = weapons[Math.floor(Math.random() * weapons.length)];
-            player.inventory.push(w);
-            lootMsg += ` • Found ${ITEMS[w].name}!`;
-          } else if (lootRoll < 0.32) {
-            // Armor
-            player.inventory.push("leather_armor");
-            lootMsg += ` • Found Leather Armor!`;
-          } else if (lootRoll < 0.50) {
-            // Potion
-            const pot = Math.random() < 0.6 ? "health_potion" : "mana_potion";
-            player.inventory.push(pot);
-            lootMsg += ` • Found ${ITEMS[pot].name}!`;
-          } else if (lootRoll < 0.60) {
-            // Adult item (rarer)
-            const adult = Math.random() < 0.5 ? "pleasure_oil" : "aphrodisiac";
-            player.inventory.push(adult);
-            lootMsg += ` • Found ${ITEMS[adult].name}!`;
+          // Higher tier monsters = better chance at good loot
+          let dropChance = 0.35 + (monTier * 0.08);
+          if (roll < dropChance) {
+            let possible = [];
+            if (monTier <= 1) {
+              possible = ["rusty_sword", "wooden_bow", "leather_armor", "health_potion", "mana_potion", "pleasure_oil"];
+            } else if (monTier === 2) {
+              possible = ["iron_blade", "cyber_bow", "chain_mail", "greater_health", "greater_mana", "aphrodisiac", "health_potion"];
+            } else if (monTier === 3) {
+              possible = ["neon_edge", "pulse_bow", "plasma_staff", "shadow_weave", "elixir_of_lust", "circuit_heart", "greater_health"];
+            } else {
+              possible = ["void_cleaver", "storm_piercer", "soul_reactor", "dragon_circuit", "queen_venom", "overclock_serum", "neon_edge"];
+            }
+
+            // Small chance to upgrade tier further
+            if (Math.random() < 0.12 && monTier >= 3) {
+              possible = ["godslayer", "infinity_bow", "black_sun_staff", "eternal_carapace", "forbidden_nectar", "phoenix_core"];
+            }
+
+            const drop = possible[Math.floor(Math.random() * possible.length)];
+            if (ITEMS[drop]) {
+              player.inventory.push(drop);
+              lootMsg += ` • Found ${ITEMS[drop].name} (${ITEMS[drop].tier})!`;
+            }
           }
-          // else: just gold + xp (most common)
 
           log(lootMsg, "combat");
           checkLevelUp();
