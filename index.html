@@ -302,6 +302,8 @@
     let combatTarget = null;
     let canvas, ctx;
     let lastInteract = 0;
+    let spriteImages = {};   // loaded character sprites
+    let spritesReady = false;
 
     // ==================== INIT ====================
     const classImages = {
@@ -311,6 +313,37 @@
       succubus: "images/succubus.png",
       archer: "images/archer.png"
     };
+
+    // Sprite files for the map (full body)
+    const spritePaths = {
+      warrior:  "images/sprite_warrior.png",
+      mage:     "images/sprite_mage.png",
+      rogue:    "images/sprite_rogue.png",
+      succubus: "images/sprite_succubus.png",
+      archer:   "images/sprite_archer.png"
+    };
+
+    function loadSprites() {
+      let loaded = 0;
+      const total = Object.keys(spritePaths).length;
+      for (const [cls, path] of Object.entries(spritePaths)) {
+        const img = new Image();
+        img.onload = () => {
+          loaded++;
+          if (loaded >= total) {
+            spritesReady = true;
+            console.log("All character sprites loaded");
+          }
+        };
+        img.onerror = () => {
+          loaded++;
+          console.warn("Sprite not found:", path);
+          if (loaded >= total) spritesReady = true;
+        };
+        img.src = path;
+        spriteImages[cls] = img;
+      }
+    }
 
     document.getElementById("playerClass").addEventListener("change", function() {
       const img = document.getElementById("classPreview");
@@ -333,11 +366,14 @@
       window.addEventListener("resize", resizeCanvas);
 
       setupInput();
+      loadSprites();   // load character sprites for the map
+
       if (!offline) connectSocket();
       else log("Offline mode. Multiplayer disabled.", "system");
 
       log(`Welcome to Ebonfall, ${player.name} the ${player.className}.`, "system");
       log("Use WASD or Arrow keys to move. Walk into glowing zones to interact.", "system");
+      log("Character sprites will appear once the image files are uploaded.", "system");
 
       requestAnimationFrame(gameLoop);
       renderUI();
@@ -416,6 +452,7 @@
     function getPublicPlayer() {
       return {
         name: player.name,
+        class: player.class,
         className: player.className,
         level: player.level,
         hp: player.hp,
@@ -528,26 +565,44 @@
       for (const name in otherPlayers) {
         const p = otherPlayers[name];
         if (p.x === undefined) continue;
-        ctx.fillStyle = p.color || "#aaaaaa";
-        ctx.beginPath();
-        ctx.arc(p.x + 8, p.y + 8, 10, 0, Math.PI * 2);
-        ctx.fill();
+
+        const otherSprite = spriteImages[p.class] || null;
+        if (otherSprite && otherSprite.complete && otherSprite.naturalWidth > 0) {
+          const sw = 48;
+          const sh = 64;
+          ctx.drawImage(otherSprite, p.x - 8, p.y - 40, sw, sh);
+        } else {
+          ctx.fillStyle = p.color || "#aaaaaa";
+          ctx.beginPath();
+          ctx.arc(p.x + 8, p.y + 8, 10, 0, Math.PI * 2);
+          ctx.fill();
+        }
         ctx.fillStyle = "#fff";
         ctx.font = "11px sans-serif";
-        ctx.fillText(p.name, p.x - 10, p.y - 6);
+        ctx.fillText(p.name, p.x - 10, p.y - 48);
       }
 
-      // Local player
-      ctx.fillStyle = player.color;
-      ctx.beginPath();
-      ctx.arc(player.x + 8, player.y + 8, 11, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = "#fff";
-      ctx.lineWidth = 2;
-      ctx.stroke();
+      // Local player - use sprite if available
+      const mySprite = spriteImages[player.class];
+      if (mySprite && mySprite.complete && mySprite.naturalWidth > 0) {
+        const sw = 52;
+        const sh = 70;
+        ctx.drawImage(mySprite, player.x - 10, player.y - 48, sw, sh);
+      } else {
+        // Fallback to circle if sprite not loaded yet
+        ctx.fillStyle = player.color;
+        ctx.beginPath();
+        ctx.arc(player.x + 8, player.y + 8, 11, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
+      // Name tag
       ctx.fillStyle = "#fff";
       ctx.font = "12px sans-serif";
-      ctx.fillText(player.name, player.x - 8, player.y - 8);
+      ctx.fillText(player.name, player.x - 8, player.y - 56);
 
       ctx.restore();
     }
