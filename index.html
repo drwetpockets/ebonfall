@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ebonfall: Carnal Realms (18+)</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    :root {
+      --bg: #0d0a0f;
+      --panel: #1a1420;
+      --accent: #9b2d5a;
+      --accent2: #c45c26;
+      --text: #e8d5c4;
+      --muted: #8a7a6b;
+      --hp: #c0392b;
+      --mp: #2980b9;
+      --gold: #f1c40f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.4;
+    }
+    h1, h2, h3 { color: var(--accent); }
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin: 2px;
+    }
+    button:hover { background: #c23a6e; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    button.secondary { background: #3d2a4a; }
+    button.danger { background: #8b1a1a; }
+    input, select {
+      background: #2a2030;
+      border: 1px solid #4a3a50;
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 4px;
+      margin: 4px 0;
+    }
+    .screen { display: none; max-width: 1100px; margin: 0 auto; padding: 20px; }
+    .screen.active { display: block; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid #3a2a45;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    @media (max-width: 800px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+    .bar {
+      height: 18px;
+      background: #2a2030;
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 4px 0;
+    }
+    .bar-fill { height: 100%; transition: width 0.3s; }
+    .hp-fill { background: var(--hp); }
+    .mp-fill { background: var(--mp); }
+    .xp-fill { background: #27ae60; }
+    .log {
+      height: 180px;
+      overflow-y: auto;
+      background: #120e16;
+      padding: 10px;
+      font-size: 13px;
+      border-radius: 4px;
+      white-space: pre-wrap;
+    }
+    .log .system { color: #7f8c8d; }
+    .log .combat { color: #e74c3c; }
+    .log .seduction { color: #e91e63; }
+    .log .chat { color: #3498db; }
+    .item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 8px;
+      background: #221a2a;
+      margin: 3px 0;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .player-card {
+      background: #221a2a;
+      padding: 10px;
+      border-radius: 6px;
+      margin: 4px 0;
+      cursor: pointer;
+    }
+    .player-card:hover { background: #2e2438; }
+    .player-card.me { border-left: 3px solid var(--accent); }
+    .stat { display: inline-block; margin-right: 12px; }
+    .gold { color: var(--gold); }
+    .hidden { display: none !important; }
+    #chatBox { display: flex; gap: 6px; margin-top: 8px; }
+    #chatInput { flex: 1; }
+    .warning {
+      background: #4a1a1a;
+      border: 1px solid #8b1a1a;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <!-- ========== START SCREEN ========== -->
+  <div id="startScreen" class="screen active">
+    <div class="panel">
+      <h1>Ebonfall: Carnal Realms</h1>
+      <p style="margin: 8px 0 16px; color: var(--muted);">A small mature multiplayer browser RPG (18+)</p>
+      <div class="warning">
+        <strong>Mature Content Warning:</strong> This game contains violence, adult language, sexual themes, and seduction mechanics. For adults only.
+      </div>
+      <label>Your Name<br><input id="playerName" maxlength="16" placeholder="Enter name..." value="Wanderer"></label><br><br>
+      <label>Class<br>
+        <select id="playerClass">
+          <option value="warrior">Warrior – High strength & HP</option>
+          <option value="mage">Mage – Powerful magic</option>
+          <option value="rogue">Rogue – Stealth & critical hits</option>
+          <option value="succubus">Succubus / Incubus – Master of Seduction</option>
+        </select>
+      </label><br><br>
+      <label>Room Name (multiplayer)<br><input id="roomName" maxlength="20" placeholder="default" value="default"></label><br><br>
+      <button onclick="startGame()">Enter Ebonfall</button>
+      <button class="secondary" onclick="startOffline()">Play Offline (Single Player)</button>
+    </div>
+  </div>
+
+  <!-- ========== MAIN GAME ========== -->
+  <div id="gameScreen" class="screen">
+    <div class="grid-2">
+      <!-- LEFT COLUMN -->
+      <div>
+        <div class="panel">
+          <h2 id="charName">Character</h2>
+          <div id="charInfo"></div>
+          <div class="bar"><div id="hpBar" class="bar-fill hp-fill" style="width:100%"></div></div>
+          <div style="font-size:12px">HP: <span id="hpText">100/100</span></div>
+          <div class="bar"><div id="mpBar" class="bar-fill mp-fill" style="width:100%"></div></div>
+          <div style="font-size:12px">Mana: <span id="mpText">50/50</span></div>
+          <div class="bar"><div id="xpBar" class="bar-fill xp-fill" style="width:0%"></div></div>
+          <div style="font-size:12px">Level <span id="levelText">1</span> — XP: <span id="xpText">0/100</span></div>
+          <p class="gold" style="margin-top:8px">Gold: <span id="goldText">50</span></p>
+        </div>
+
+        <div class="panel">
+          <h3>Skills</h3>
+          <div id="skillsList"></div>
+        </div>
+
+        <div class="panel">
+          <h3>Location: <span id="locationName">Town Square</span></h3>
+          <p id="locationDesc" style="font-size:13px;color:var(--muted);margin:6px 0"></p>
+          <div id="locationActions"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div>
+        <div class="panel">
+          <h3>Inventory</h3>
+          <div id="inventoryList"></div>
+        </div>
+
+        <div class="panel">
+          <h3>Players in Room</h3>
+          <div id="playerList"></div>
+        </div>
+
+        <div class="panel">
+          <h3>Game Log</h3>
+          <div id="log" class="log"></div>
+          <div id="chatBox">
+            <input id="chatInput" placeholder="Type message..." maxlength="120">
+            <button onclick="sendChat()">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Combat Overlay -->
+    <div id="combatPanel" class="panel hidden" style="margin-top:16px;border-color:var(--hp)">
+      <h2>Combat</h2>
+      <div id="combatInfo"></div>
+      <div id="combatActions" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== GAME DATA ====================
+    const CLASSES = {
+      warrior:  { name: "Warrior",  hp: 120, mp: 30, str: 12, mag: 4,  agi: 6,  cha: 5 },
+      mage:     { name: "Mage",     hp: 80,  mp: 90, str: 4,  mag: 14, agi: 5,  cha: 7 },
+      rogue:    { name: "Rogue",    hp: 90,  mp: 40, str: 7,  mag: 5,  agi: 13, cha: 8 },
+      succubus: { name: "Succubus", hp: 95,  mp: 60, str: 6,  mag: 9,  agi: 8,  cha: 15 }
+    };
+
+    const LOCATIONS = {
+      town: {
+        name: "Town Square",
+        desc: "A bustling square filled with merchants, mercenaries, and the occasional whore leaning against a post. The smell of roasted meat and cheap perfume hangs in the air.",
+        actions: ["shop", "rest", "dungeon", "brothel", "wilderness"]
+      },
+      dungeon: {
+        name: "Dark Dungeon",
+        desc: "Cold stone corridors echo with distant screams. Something hungry lives down here.",
+        actions: ["explore", "return"]
+      },
+      brothel: {
+        name: "The Velvet Veil",
+        desc: "Silk curtains, low moans, and the scent of incense and sex. The madam eyes you with professional interest.",
+        actions: ["seduce", "buyServices", "return"]
+      },
+      wilderness: {
+        name: "Twisted Woods",
+        desc: "Twisted trees and strange cries. Bandits and worse stalk these paths.",
+        actions: ["hunt", "return"]
+      }
+    };
+
+    const ITEMS = {
+      rusty_sword:   { name: "Rusty Sword", type: "weapon", dmg: 8, price: 25 },
+      iron_blade:    { name: "Iron Blade", type: "weapon", dmg: 14, price: 80 },
+      leather_armor: { name: "Leather Armor", type: "armor", def: 5, price: 40 },
+      chain_mail:    { name: "Chain Mail", type: "armor", def: 12, price: 120 },
+      health_potion: { name: "Health Potion", type: "consumable", heal: 40, price: 20 },
+      mana_potion:   { name: "Mana Potion", type: "consumable", mana: 30, price: 25 },
+      pleasure_oil:  { name: "Pleasure Oil", type: "adult", seduceBonus: 15, price: 35 },
+      aphrodisiac:   { name: "Aphrodisiac", type: "adult", seduceBonus: 25, price: 60 },
+      dark_tome:     { name: "Dark Tome", type: "weapon", dmg: 10, magBonus: 5, price: 90 }
+    };
+
+    const MONSTERS = [
+      { name: "Filthy Bandit", hp: 45, dmg: 8, xp: 25, gold: 15 },
+      { name: "Cave Spider", hp: 35, dmg: 12, xp: 30, gold: 10 },
+      { name: "Corrupted Guard", hp: 70, dmg: 14, xp: 50, gold: 35 },
+      { name: "Lust Demon", hp: 90, dmg: 16, xp: 80, gold: 50, seducible: true }
+    ];
+
+    // ==================== STATE ====================
+    let player = null;
+    let socket = null;
+    let offline = false;
+    let currentRoom = "default";
+    let inCombat = false;
+    let combatTarget = null; // monster or player
+    let isPlayerDuel = false;
+    let opponentSocketId = null;
+
+    // ==================== START ====================
+    function startGame() {
+      const name = document.getElementById("playerName").value.trim() || "Wanderer";
+      const cls = document.getElementById("playerClass").value;
+      currentRoom = document.getElementById("roomName").value.trim() || "default";
+      offline = false;
+      initPlayer(name, cls);
+      connectSocket();
+      showGame();
+    }
+
+    function startOffline() {
+      const name = document.getElementById("playerName").value.trim() || "Wanderer";
+      const cls = document.getElementById("playerClass").value;
+      offline = true;
+      initPlayer(name, cls);
+      showGame();
+      log("You entered Ebonfall alone. Multiplayer disabled.", "system");
+    }
+
+    function initPlayer(name, cls) {
+      const base = CLASSES[cls];
+      player = {
+        name,
+        class: cls,
+        className: base.name,
+        level: 1,
+        xp: 0,
+        xpNext: 100,
+        hp: base.hp,
+        maxHp: base.hp,
+        mp: base.mp,
+        maxMp: base.mp,
+        str: base.str,
+        mag: base.mag,
+        agi: base.agi,
+        cha: base.cha,
+        gold: 50,
+        location: "town",
+        skills: {
+          combat: 1,
+          magic: 1,
+          stealth: 1,
+          alchemy: 1,
+          seduction: cls === "succubus" ? 3 : 1
+        },
+        inventory: ["rusty_sword", "health_potion", "pleasure_oil"],
+        equipped: { weapon: "rusty_sword", armor: null }
+      };
+    }
+
+    function connectSocket() {
+      socket = io();
+      socket.on("connect", () => {
+        socket.emit("joinRoom", { room: currentRoom, player: getPublicPlayer() });
+        log("Connected to multiplayer room: " + currentRoom, "system");
+      });
+      socket.on("roomUpdate", (players) => renderPlayers(players));
+      socket.on("chat", (data) => log(`[${data.name}]: ${data.text}`, "chat"));
+      socket.on("challengeReceived", (data) => {
+        if (confirm(`${data.fromName} challenges you to a duel! Accept?`)) {
+          socket.emit("acceptChallenge", data.fromId);
+        }
+      });
+      socket.on("challengeAccepted", (data) => {
+        startPlayerDuel(data.opponent, data.opponentId);
+      });
+      socket.on("combatAction", (data) => {
+        if (inCombat && isPlayerDuel) handleOpponentAction(data);
+      });
+    }
+
+    function getPublicPlayer() {
+      return {
+        name: player.name,
+        className: player.className,
+        level: player.level,
+        hp: player.hp,
+        maxHp: player.maxHp,
+        location: player.location
+      };
+    }
+
+    function showGame() {
+      document.getElementById("startScreen").classList.remove("active");
+      document.getElementById("gameScreen").classList.add("active");
+      renderAll();
+      log(`Welcome to Ebonfall, ${player.name} the ${player.className}.`, "system");
+      log("The night is thick with lust and blood. Survive.", "system");
+    }
+
+    // ==================== RENDER ====================
+    function renderAll() {
+      document.getElementById("charName").textContent = `${player.name} the ${player.className}`;
+      document.getElementById("charInfo").innerHTML = `
+        <span class="stat">STR ${player.str}</span>
+        <span class="stat">MAG ${player.mag}</span>
+        <span class="stat">AGI ${player.agi}</span>
+        <span class="stat">CHA ${player.cha}</span>
+      `;
+      updateBars();
+      document.getElementById("goldText").textContent = player.gold;
+      document.getElementById("levelText").textContent = player.level;
+      document.getElementById("xpText").textContent = `${player.xp}/${player.xpNext}`;
+
+      // Skills
+      let skillsHtml = "";
+      for (const [k, v] of Object.entries(player.skills)) {
+        skillsHtml += `<div>${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}</div>`;
+      }
+      document.getElementById("skillsList").innerHTML = skillsHtml;
+
+      // Location
+      const loc = LOCATIONS[player.location];
+      document.getElementById("locationName").textContent = loc.name;
+      document.getElementById("locationDesc").textContent = loc.desc;
+      let actHtml = "";
+      loc.actions.forEach(a => {
+        const labels = {
+          shop: "Visit Merchant",
+          rest: "Rest at Inn (10g)",
+          dungeon: "Enter Dungeon",
+          brothel: "Enter The Velvet Veil",
+          wilderness: "Enter Twisted Woods",
+          explore: "Explore Deeper",
+          return: "Return to Town",
+          seduce: "Try to Seduce Someone",
+          buyServices: "Buy... Services (40g)",
+          hunt: "Hunt for Prey"
+        };
+        actHtml += `<button onclick="doAction('${a}')">${labels[a] || a}</button>`;
+      });
+      document.getElementById("locationActions").innerHTML = actHtml;
+
+      // Inventory
+      let invHtml = "";
+      player.inventory.forEach((id, idx) => {
+        const item = ITEMS[id];
+        if (!item) return;
+        let extra = "";
+        if (item.type === "weapon" || item.type === "armor") {
+          extra = `<button onclick="equipItem('${id}')">Equip</button>`;
+        } else if (item.type === "consumable" || item.type === "adult") {
+          extra = `<button onclick="useItem('${id}', ${idx})">Use</button>`;
+        }
+        invHtml += `<div class="item"><span>${item.name}</span><span>${extra}</span></div>`;
+      });
+      if (!invHtml) invHtml = "<em>Empty</em>";
+      document.getElementById("inventoryList").innerHTML = invHtml;
+
+      if (!offline && socket) {
+        socket.emit("updatePlayer", getPublicPlayer());
+      }
+    }
+
+    function updateBars() {
+      const hpPct = Math.max(0, (player.hp / player.maxHp) * 100);
+      const mpPct = Math.max(0, (player.mp / player.maxMp) * 100);
+      const xpPct = Math.max(0, (player.xp / player.xpNext) * 100);
+      document.getElementById("hpBar").style.width = hpPct + "%";
+      document.getElementById("mpBar").style.width = mpPct + "%";
+      document.getElementById("xpBar").style.width = xpPct + "%";
+      document.getElementById("hpText").textContent = `${player.hp}/${player.maxHp}`;
+      document.getElementById("mpText").textContent = `${player.mp}/${player.maxMp}`;
+    }
+
+    function renderPlayers(players) {
+      let html = "";
+      players.forEach(p => {
+        const isMe = p.name === player.name;
+        html += `<div class="player-card ${isMe ? 'me' : ''}" onclick="${isMe ? '' : `challengePlayer('${p.name}')`}">
+          <strong>${p.name}</strong> (${p.className} Lv${p.level})
+          ${isMe ? ' — You' : ' — Click to Challenge'}
+          <br><small>HP ${p.hp}/${p.maxHp} • ${LOCATIONS[p.location]?.name || p.location}</small>
+        </div>`;
+      });
+      document.getElementById("playerList").innerHTML = html || "<em>No other players</em>";
+    }
+
+    function log(msg, type = "") {
+      const el = document.getElementById("log");
+      const div = document.createElement("div");
+      if (type) div.className = type;
+      div.textContent = msg;
+      el.appendChild(div);
+      el.scrollTop = el.scrollHeight;
+    }
+
+    // ==================== ACTIONS ====================
+    function doAction(action) {
+      if (inCombat) return;
+      switch (action) {
+        case "shop": openShop(); break;
+        case "rest": rest(); break;
+        case "dungeon": travel("dungeon"); break;
+        case "brothel": travel("brothel"); break;
+        case "wilderness": travel("wilderness"); break;
+        case "return": travel("town"); break;
+        case "explore": startMonsterFight(); break;
+        case "hunt": startMonsterFight(); break;
+        case "seduce": trySeduce(); break;
+        case "buyServices": buyServices(); break;
+      }
+    }
+
+    function travel(loc) {
+      player.location = loc;
+      log(`You travel to ${LOCATIONS[loc].name}.`, "system");
+      renderAll();
+    }
+
+    function rest() {
+      if (player.gold < 10) { log("Not enough gold.", "system"); return; }
+      player.gold -= 10;
+      player.hp = player.maxHp;
+      player.mp = player.maxMp;
+      log("You rest at the inn. Body and mind restored... and the bed was surprisingly comfortable.", "system");
+      renderAll();
+    }
+
+    function openShop() {
+      const choices = Object.keys(ITEMS);
+      let msg = "Merchant: \"What do you desire, traveler?\"\n";
+      choices.forEach((id, i) => {
+        msg += `${i + 1}. ${ITEMS[id].name} — ${ITEMS[id].price}g\n`;
+      });
+      const pick = prompt(msg + "\nEnter number to buy (or cancel):");
+      if (!pick) return;
+      const idx = parseInt(pick) - 1;
+      if (idx >= 0 && idx < choices.length) {
+        const id = choices[idx];
+        const item = ITEMS[id];
+        if (player.gold >= item.price) {
+          player.gold -= item.price;
+          player.inventory.push(id);
+          log(`Bought ${item.name} for ${item.price} gold.`, "system");
+          renderAll();
+        } else {
+          log("Not enough gold.", "system");
+        }
+      }
+    }
+
+    function equipItem(id) {
+      const item = ITEMS[id];
+      if (item.type === "weapon") {
+        player.equipped.weapon = id;
+        log(`Equipped ${item.name}.`, "system");
+      } else if (item.type === "armor") {
+        player.equipped.armor = id;
+        log(`Equipped ${item.name}.`, "system");
+      }
+      renderAll();
+    }
+
+    function useItem(id, idx) {
+      const item = ITEMS[id];
+      if (item.heal) {
+        player.hp = Math.min(player.maxHp, player.hp + item.heal);
+        log(`You drink the ${item.name} and recover ${item.heal} HP.`, "system");
+      } else if (item.mana) {
+        player.mp = Math.min(player.maxMp, player.mp + item.mana);
+        log(`You drink the ${item.name} and recover ${item.mana} mana.`, "system");
+      } else if (item.seduceBonus) {
+        log(`You apply the ${item.name}. Your allure grows stronger for a while...`, "seduction");
+        // Temporary bonus handled in seduction checks
+        player._tempSeduce = (player._tempSeduce || 0) + item.seduceBonus;
+      }
+      player.inventory.splice(idx, 1);
+      renderAll();
+    }
+
+    function buyServices() {
+      if (player.gold < 40) { log("Not enough gold for that kind of company.", "system"); return; }
+      player.gold -= 40;
+      player.hp = Math.min(player.maxHp, player.hp + 20);
+      player.mp = Math.min(player.maxMp, player.mp + 15);
+      gainSkill("seduction", 1);
+      log("You spend an hour in the Velvet Veil. Your body is satisfied and your skills in the arts of pleasure grow.", "seduction");
+      renderAll();
+    }
+
+    function trySeduce() {
+      const roll = Math.random() * 100;
+      const power = player.cha * 3 + player.skills.seduction * 8 + (player._tempSeduce || 0);
+      if (roll < power) {
+        const gold = 20 + Math.floor(Math.random() * 40);
+        player.gold += gold;
+        gainSkill("seduction", 2);
+        log(`Your charm works. They take you somewhere private... You leave richer (+${gold}g) and more skilled.`, "seduction");
+      } else {
+        log("They laugh and push you away. Your advances failed this time.", "seduction");
+        gainSkill("seduction", 1);
+      }
+      player._tempSeduce = 0;
+      renderAll();
+    }
+
+    // ==================== COMBAT ====================
+    function startMonsterFight() {
+      const mon = { ...MONSTERS[Math.floor(Math.random() * MONSTERS.length)] };
+      mon.currentHp = mon.hp;
+      combatTarget = mon;
+      isPlayerDuel = false;
+      inCombat = true;
+      showCombat();
+      log(`A ${mon.name} appears!`, "combat");
+    }
+
+    function startPlayerDuel(opponent, oppId) {
+      combatTarget = {
+        name: opponent.name,
+        hp: opponent.hp,
+        currentHp: opponent.hp,
+        dmg: 10 + opponent.level * 2,
+        isPlayer: true
+      };
+      opponentSocketId = oppId;
+      isPlayerDuel = true;
+      inCombat = true;
+      showCombat();
+      log(`Duel started against ${opponent.name}!`, "combat");
+    }
+
+    function showCombat() {
+      document.getElementById("combatPanel").classList.remove("hidden");
+      updateCombatUI();
+    }
+
+    function updateCombatUI() {
+      const t = combatTarget;
+      document.getElementById("combatInfo").innerHTML = `
+        <strong>${t.name}</strong><br>
+        HP: ${t.currentHp}/${t.hp}
+        <div class="bar"><div class="bar-fill hp-fill" style="width:${(t.currentHp/t.hp)*100}%"></div></div>
+      `;
+      document.getElementById("combatActions").innerHTML = `
+        <button onclick="combatAttack()">Attack</button>
+        <button onclick="combatMagic()">Magic Blast (15 mana)</button>
+        <button onclick="combatSeduce()">Seduce</button>
+        <button class="danger" onclick="combatFlee()">Flee</button>
+      `;
+    }
+
+    function getWeaponDmg() {
+      const w = player.equipped.weapon ? ITEMS[player.equipped.weapon] : null;
+      return (w?.dmg || 5) + Math.floor(player.str / 2) + player.skills.combat;
+    }
+
+    function combatAttack() {
+      if (!inCombat) return;
+      const dmg = getWeaponDmg() + Math.floor(Math.random() * 6);
+      combatTarget.currentHp -= dmg;
+      log(`You strike for ${dmg} damage!`, "combat");
+      gainSkill("combat", 1);
+      afterPlayerAction();
+    }
+
+    function combatMagic() {
+      if (player.mp < 15) { log("Not enough mana!", "system"); return; }
+      player.mp -= 15;
+      const dmg = 12 + player.mag + player.skills.magic + Math.floor(Math.random() * 8);
+      combatTarget.currentHp -= dmg;
+      log(`You unleash magic for ${dmg} damage!`, "combat");
+      gainSkill("magic", 1);
+      afterPlayerAction();
+    }
+
+    function combatSeduce() {
+      const power = player.cha * 2 + player.skills.seduction * 6 + (player._tempSeduce || 0);
+      const roll = Math.random() * 100;
+      if (combatTarget.seducible || isPlayerDuel) {
+        if (roll < power) {
+          log(`Your seductive presence overwhelms ${combatTarget.name}. They yield!`, "seduction");
+          endCombat(true, true);
+          return;
+        } else {
+          log("Your attempt to seduce fails. They attack in rage!", "seduction");
+        }
+      } else {
+        log("This foe cannot be seduced so easily.", "system");
+      }
+      gainSkill("seduction", 1);
+      afterPlayerAction();
+    }
+
+    function combatFlee() {
+      if (Math.random() < 0.6 + player.agi * 0.02) {
+        log("You escape!", "system");
+        endCombat(false);
+      } else {
+        log("You fail to flee!", "combat");
+        afterPlayerAction();
+      }
+    }
+
+    function afterPlayerAction() {
+      updateBars();
+      if (combatTarget.currentHp <= 0) {
+        endCombat(true);
+        return;
+      }
+      // Enemy turn
+      setTimeout(() => {
+        if (!inCombat) return;
+        const dmg = combatTarget.dmg + Math.floor(Math.random() * 5);
+        const def = player.equipped.armor ? (ITEMS[player.equipped.armor].def || 0) : 0;
+        const finalDmg = Math.max(1, dmg - Math.floor(def / 2));
+        player.hp -= finalDmg;
+        log(`${combatTarget.name} hits you for ${finalDmg} damage!`, "combat");
+        updateBars();
+        if (player.hp <= 0) {
+          player.hp = 0;
+          log("You have been defeated...", "combat");
+          endCombat(false);
+          // Respawn
+          player.hp = Math.floor(player.maxHp * 0.3);
+          player.location = "town";
+          log("You wake up back in town, battered but alive.", "system");
+        }
+        updateCombatUI();
+        renderAll();
+      }, 600);
+    }
+
+    function endCombat(won, seduced = false) {
+      inCombat = false;
+      document.getElementById("combatPanel").classList.add("hidden");
+      if (won) {
+        if (seduced) {
+          const gold = 15 + Math.floor(Math.random() * 30);
+          player.gold += gold;
+          log(`Victory through seduction. You gain ${gold} gold.`, "seduction");
+        } else if (!isPlayerDuel) {
+          player.xp += combatTarget.xp;
+          player.gold += combatTarget.gold;
+          log(`You defeated the ${combatTarget.name}! +${combatTarget.xp} XP, +${combatTarget.gold}g`, "combat");
+          checkLevelUp();
+        } else {
+          log(`You defeated ${combatTarget.name} in a duel!`, "combat");
+          player.xp += 40;
+          checkLevelUp();
+        }
+      }
+      combatTarget = null;
+      isPlayerDuel = false;
+      opponentSocketId = null;
+      renderAll();
+    }
+
+    function handleOpponentAction(data) {
+      // Simple relay for future expansion – currently duels are local simulation
+    }
+
+    function challengePlayer(name) {
+      if (offline || !socket) return;
+      // Find socket id is handled server-side by name matching in a real system;
+      // for this small version we just broadcast a challenge by name via chat style
+      log(`You challenge ${name} to a duel! (They must accept)`, "system");
+      socket.emit("chat", `/challenge ${name}`);
+      // For demo purposes we also allow local self-duel simulation if needed
+    }
+
+    // ==================== PROGRESSION ====================
+    function gainSkill(skill, amount = 1) {
+      player.skills[skill] = (player.skills[skill] || 1) + amount;
+    }
+
+    function checkLevelUp() {
+      while (player.xp >= player.xpNext) {
+        player.xp -= player.xpNext;
+        player.level++;
+        player.xpNext = Math.floor(player.xpNext * 1.4);
+        player.maxHp += 12;
+        player.maxMp += 6;
+        player.hp = player.maxHp;
+        player.mp = player.maxMp;
+        player.str += 1;
+        player.mag += 1;
+        player.agi += 1;
+        player.cha += 1;
+        log(`LEVEL UP! You are now level ${player.level}.`, "system");
+      }
+    }
+
+    // ==================== CHAT ====================
+    function sendChat() {
+      const input = document.getElementById("chatInput");
+      const text = input.value.trim();
+      if (!text) return;
+      if (offline) {
+        log(`[You]: ${text}`, "chat");
+      } else if (socket) {
+        socket.emit("chat", text);
+      }
+      input.value = "";
+    }
+
+    document.getElementById("chatInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendChat();
+    });
+  </script>
+</body>
+</html>
