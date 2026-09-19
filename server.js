@@ -7,10 +7,11 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve files from the root folder (where index.html is)
+app.use(express.static(__dirname));
 
-// In-memory game state (resets on server restart)
-const rooms = {}; // roomName -> { players: {socketId: playerData} }
+// In-memory game state
+const rooms = {};
 
 io.on('connection', (socket) => {
   console.log('Player connected:', socket.id);
@@ -19,7 +20,6 @@ io.on('connection', (socket) => {
     const { room, player } = data;
     if (!rooms[room]) rooms[room] = { players: {} };
 
-    // Leave any previous room
     for (const r in rooms) {
       if (rooms[r].players[socket.id]) {
         delete rooms[r].players[socket.id];
@@ -31,7 +31,6 @@ io.on('connection', (socket) => {
     rooms[room].players[socket.id] = player;
     socket.room = room;
 
-    // Send current room players to everyone
     io.to(room).emit('roomUpdate', Object.values(rooms[room].players));
     socket.emit('joined', { room, players: Object.values(rooms[room].players) });
   });
@@ -68,7 +67,6 @@ io.on('connection', (socket) => {
   });
 
   socket.on('combatAction', (data) => {
-    // Relay combat actions between the two players
     if (data.to) {
       io.to(data.to).emit('combatAction', data);
     }
@@ -95,5 +93,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Ebonfall server running on http://localhost:${PORT}`);
+  console.log(`Ebonfall server running on port ${PORT}`);
 });
